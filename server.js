@@ -1,15 +1,16 @@
 
 
-var mikroNode            = require( 'mikronode' );
-const controllerMongo    = require( './Controllers/mongo-controller.js' );
+var mikroNode              = require( 'mikronode' );
+var requestController    = require( './Controllers/request-controller.js' );
+var controllerMongo      = require( './Controllers/mongo-controller.js' );
 
-//Defining object varaible to use mikrotik api in nodejs
+//Defining object variable to use mikrotik api in nodejs
 var routerSubMaskIp = '192.168.8';
 var routerIp        =  routerSubMaskIp + '0.1';
 var mikroTipObject  =  new mikroNode( routerIp );
 
 //Defining mongodb onjects variables
-var mongoUrl                      = 'mongodb://localhost:27017/';
+
 const databaseName                = 'caramelNetworkDb';
 const networkDnsLog               = 'networkDnsLog';
 const networkUserDetails          = 'networkUserDetails';
@@ -75,7 +76,7 @@ function mikroConnection() {
 
   //
   //
-  // @Since same
+  // @Since 1.0
   // Async generate Dns addresses
   function generateDns( dnsDetails , dnsdetailsList , callbackGenerateDns  ){
 
@@ -86,6 +87,7 @@ function mikroConnection() {
     }
     else{
       controllerMongo.saveDnsDetails( dnsdetailsList ); 
+      requestController.requestControllerMain( controllerMongo  );
     }
   }
 
