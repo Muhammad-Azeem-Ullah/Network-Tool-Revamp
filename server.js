@@ -1,7 +1,7 @@
 
 
 var mikroNode            = require( 'mikronode' );
-const controllerMongo   = require( './Controllers/mongo-controller.js' );
+const controllerMongo    = require( './Controllers/mongo-controller.js' );
 
 //Defining object varaible to use mikrotik api in nodejs
 var routerSubMaskIp = '192.168.8';
@@ -9,22 +9,27 @@ var routerIp        =  routerSubMaskIp + '0.1';
 var mikroTipObject  =  new mikroNode( routerIp );
 
 //Defining mongodb onjects variables
-var mongoUrl                  = 'mongodb://localhost:27017/';
-const databaseName            = 'caramelNetworkDb';
-const dbCouponCollection      = 'networkDnsLog';
+var mongoUrl                      = 'mongodb://localhost:27017/';
+const databaseName                = 'caramelNetworkDb';
+const networkDnsLog               = 'networkDnsLog';
+const networkUserDetails          = 'networkUserDetails';
+const networkUserRequestDetails   = 'networkUserRequestDetails';
 
-const database_promise = new Promise( function ( resolve , reject ){
+
+const databasePromise = new Promise( function ( resolve , reject ){
   try{
-    controllerMongo.createConnection( databaseName , dbCouponCollection ); 
+    controllerMongo.createConnection( databaseName , networkDnsLog , networkUserDetails , networkUserRequestDetails  );
     resolve( 'fine' );
   }catch(ex){
-
     reject('error');
   }
 });
-database_promise
+databasePromise
   .then( function whenOk( response ) {
     mikroConnection();
+  })
+  .catch(function notOk(err) {
+    console.error(err)
   });
 
 
@@ -76,7 +81,7 @@ function mikroConnection() {
 
     item = dnsDetails.shift();
     if( item ){
-      dnsdetailsList.push( { "ipAddress" : item[2].value , "urlLink" : item[1].value  } );
+      dnsdetailsList.push( { 'ipAddress' : item[2].value , 'urlLink' : item[1].value  } );
       callbackGenerateDns( dnsDetails , dnsdetailsList );
     }
     else{

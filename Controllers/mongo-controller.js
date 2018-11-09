@@ -13,21 +13,38 @@ var dbCouponCollection;
 //
 //@Since same
 //Module exports for mongodb intraction
- module.exports.createConnection =  function createConnnectWithMongo( dbName , dbCollection )
+ module.exports.createConnection =  function createConnnectWithMongo( dbName , networkDnsLog  , networkUserDetails , networkUserRequestDetails  )
 {
   MongoClient.connect(url, function(err, db) {
     if (err) throw err;
     databaseObject = db.db( dbName );
-    databaseObject.createCollection( dbCollection , function(err, res) {
+    databaseObject.createCollection( networkDnsLog , function(err, res) {
+    });
+    databaseObject.createCollection( networkUserDetails , function(err, res) {
+    });
+     databaseObject.createCollection( networkUserRequestDetails , function(err, res) {
     });
     databaseName         = dbName;
-    dbCouponCollection   = dbCollection;
+    dbCouponCollection   = networkDnsLog;
   });
 }
+
 
 module.exports.saveDnsDetails =  function saveDnsDetailsModule( dnsDetails  )
 {
   databaseObject.collection( dbCouponCollection ).insertMany( dnsDetails , function(err, res) {
       if (err) throw err;
     });
+}
+
+
+module.exports.saveUserDetails =  function saveUserDetails( userDetail  )
+{
+
+  database_object.collection( "networkUserDetails" ).update(
+    {  ipAddress : userDetail.ipAddress  },
+    userDetail ,
+    { upsert: true }
+ );
+
 }
