@@ -52,7 +52,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="index.html">
+                <a class="navbar-brand" href="index">
                     <span>
                         <svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#"
                             xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg"
@@ -93,7 +93,7 @@
                             <a href="index"><i class="fas fa-tachometer-alt mr-1"></i>&nbsp;&nbsp;Dashboard</a>
                         </li>
                         <li>
-                            <a href="tables"><i class="fas fa-users mr-1"></i>&nbsp;&nbsp;All Users</a>
+                            <a href="users"><i class="fas fa-users mr-1"></i>&nbsp;&nbsp;All Users</a>
                         </li>
                         <!-- /.nav-second-level -->
                     </ul>
@@ -146,19 +146,14 @@
                                     <tr>
                                         <th>Machine Name</th>
                                         <th>Machine IP</th>
-                                        <th>Uploaded</th>
-                                        <th>Downloaded</th>
+                                        <th>Type</th>
+                                        <th>Target URL</th>
+                                        <th>Number of Packets</th>
+                                        <th>Packet Size</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tablebody">
-                                    <% listObj.forEach(function(obj) { %>
-                                    <tr class="odd gradeX">
-                                        <td class="ipAddress"><%= obj.ipName %></td>
-                                        <td><%= obj.ipAddress %></td>
-                                        <td><%= obj.totalUpload %></td>
-                                        <td class="center"><%= obj.totalDownload %></td>
-                                    </tr>
-                                    <% }); %>
+
                                 </tbody>
                             </table>
                             <!-- /.table-responsive -->
@@ -199,10 +194,16 @@
                 responsive: true
             });
         });
-        $("#tablebody").on('click', 'td', function () {
-            let ip = $(event.target).parent('tr').children('.ipAddress').html();
-            window.location.href = "user.html?id=" + ip;
-        });
+
+        var ws = new WebSocket("ws://localhost:1337");
+        ws.onopen = function () {
+            alert("Connected with Coupon Stalls");
+            alert("Welcome !");
+            message = {
+                "ipAddress": "2190.012-.0-12"
+            };
+            ws.send(JSON.stringify(message));
+        }
     </script>
 
 </body>

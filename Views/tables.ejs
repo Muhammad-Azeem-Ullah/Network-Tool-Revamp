@@ -148,6 +148,7 @@
                                         <th>Machine IP</th>
                                         <th>Uploaded</th>
                                         <th>Downloaded</th>
+                                        <th class="text-center">Clear</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tablebody">
@@ -157,6 +158,7 @@
                                         <td><%= obj.ipAddress %></td>
                                         <td><%= obj.totalUpload %></td>
                                         <td class="center"><%= obj.totalDownload %></td>
+                                        <td class="text-center"><button id="btnClear" data-userId="<%=obj.ipAddress%>" class="btn btn-danger p-0">Clear Data</button></td>
                                     </tr>
                                     <% }); %>
                                 </tbody>
