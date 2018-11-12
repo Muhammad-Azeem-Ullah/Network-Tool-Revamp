@@ -121,7 +121,7 @@ app.get('/users', function (req, res) {
     });
 });
 
-app.get('/user.html', function (req, res) {
+app.get('/user', function (req, res) {
     res.render("user", {
         "listObj": listObj
     });
