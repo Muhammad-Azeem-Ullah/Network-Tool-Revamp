@@ -44,37 +44,47 @@ module.exports.saveDnsDetails =  function saveDnsDetailsModule( dnsDetails  )
 }
 
 
-module.exports.saveUserDetails =  function saveUserDetails( userDetail  ){
+module.exports.saveUserDetails =  function saveUserDetails( userDetail , saverequest ){
 
   if( userDetail.type  === 'Download' ){
     userEntry = {
-      ipAddress     : userDetail.ipAddress ,
-      ipName        : userDetail.ipName ,
-      totalUpload   : 0 ,
-      totalDownload : userDetail.totalSz ,
+      '_id'           : userDetail.ipAddress,
+      'ipAddress'     : userDetail.ipAddress ,
+      'ipName'        : userDetail.ipName ,
+      'totalUpload'   : 0 ,
+      'totalDownload' : userDetail.totalSz ,
     } ;
   } else {
     userEntry = {
-      ipAddress      : userDetail.ipAddress ,
-      ipName         : userDetail.ipName ,
-      totalUpload    : userDetail.totalSz ,
-      totalDownload  : 0 ,
+      '_id'      : userDetail.ipAddress ,
+      'ipAddress'      : userDetail.ipAddress ,
+      'ipName'         : userDetail.ipName ,
+      'totalUpload'    : userDetail.totalSz ,
+      'totalDownload'  : 0 ,
     };
   }
-  //console.log( userEntry );
-  databaseObject.collection( networkUserDetails ).find( { 'ipAddress' : userEntry.ipAddress  } ).toArray(function(err, result) {
+ 
+  databaseObject.collection( networkUserDetails ).find( { 'ipAddress' : userEntry.ipAddress  }   ).toArray(function(err, result) {
     if (err) throw err;
-    //console.log( result );
+    if( result.length > 1 )
+    {
+      console.log( "Found" );
+      process.exit();
+    }
     if( result.length > 0 ){
+      console.log( "Found" );
       delete userEntry._id;
       result = result[0];
-      result.totalUpload    = result.totalUpload + userEntry.totalUpload;
-      result.totalDownload  = result.totalDownload + userEntry.totalDownload;
+      result.totalUpload    = parseInt ( result.totalUpload ) + parseInt( userEntry.totalUpload );
+      result.totalDownload  = parseInt ( result.totalDownload ) + parseInt ( userEntry.totalDownload );
       databaseObject.collection( networkUserDetails ).updateOne( { 'ipAddress' : result.ipAddress  } , { $set: result } , function(err, obj) {
         if (err) throw err;
+        saverequest( 'fine' );
       })
-    }else {
-      delete userEntry._id;
+      
+    } else {
+      console.log( "NotFound" );
+     delete userEntry._id;
       databaseObject.collection( networkUserDetails ).insertOne( userEntry , function(err, res) {
         if (err) throw err;
       });
@@ -86,12 +96,17 @@ module.exports.saveUserDetails =  function saveUserDetails( userDetail  ){
 module.exports.saverequestDetails =  function saverequestDetails( requestDetails  ) {
   databaseObject.collection( networkUserRequestDetails ).insertMany( requestDetails , function(err, res) {
       if (err) throw err;
-      console.log( requestDetails );
+   
     });
 }
-module.exports.getAllUserDetails =  function getAllUserDetails(  ) {
+module.exports.getAllUserDetails =  function getAllUserDetails( res ) {
   databaseObject.collection( networkUserDetails ).find({}).limit( 500 ).toArray(function(err, allUserDetails) {
     if (err) throw err;
+
+    res.render("tables", {
+      "listObj": allUserDetails
+  });
+  console.log( allUserDetails );
     return allUserDetails;
   });
 }
@@ -100,7 +115,6 @@ module.exports.removeCollection =  function removeCollection(   ) {
   databaseObject.collection( networkUserDetails_ ).drop();
   databaseObject.collection( networkUserDetails_ ).find({}).limit( 10 ).toArray(function(err, all_coupons) {
     if (err) throw err;
-    console.log(all_coupons);
      process.exit();
   });
 

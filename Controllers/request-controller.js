@@ -87,9 +87,24 @@ function generateRequestData( requestsDetails , requestsDetailsList , callbackRe
         } else{
             requestObject = { ipAddress : item[0] , ipName : 'Unknown' , targetIp :  item[1] , numPackets :  item[3] , totalSz : item[2] , type : "Upload" }
         }}
-        controllerMongo.saveUserDetails( requestObject  );
-        requestsDetailsList.push( requestObject );
-        callbackRequestsDetails( requestsDetails , requestsDetailsList , callbackRequestsDetails  );
+        var saverequest = new Promise( function ( resolve , reject ){
+            try{
+                controllerMongo.saveUserDetails( requestObject  , resolve );
+            }catch(ex){
+              reject('error');
+            }
+          });
+          saverequest
+            .then( function whenOk( response ) {
+                console.log( "done" );
+                requestsDetailsList.push( requestObject );
+                callbackRequestsDetails( requestsDetails , requestsDetailsList , callbackRequestsDetails  );
+            })
+            .catch(function notOk(err) {
+              console.error(err)
+            });
+        
+        
     }
     else{
         controllerMongo.saverequestDetails( requestsDetailsList  );

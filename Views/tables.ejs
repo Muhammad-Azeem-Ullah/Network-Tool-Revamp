@@ -155,8 +155,8 @@
                                     <tr class="odd gradeX">
                                         <td class="ipAddress"><%= obj.ipName %></td>
                                         <td><%= obj.ipAddress %></td>
-                                        <td><%= obj.totalUpload %></td>
-                                        <td class="center"><%= obj.totalDownload %></td>
+                                        <td><%= obj.totalUpload * 8/(1024.0 * 1024.0) %></td>
+                                        <td class="center"><%= obj.totalDownload * 8/(1024.0 * 1024.0) %></td>
                                     </tr>
                                     <% }); %>
                                 </tbody>

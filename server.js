@@ -1,8 +1,12 @@
 
 
-var mikroNode              = require( 'mikronode' );
-var requestController    = require( './Controllers/request-controller.js' );
-var controllerMongo      = require( './Controllers/mongo-controller.js' );
+var mikroNode            = require( 'mikronode' ),
+    requestController    = require( './Controllers/request-controller.js' ),
+    controllerMongo      = require( './Controllers/mongo-controller.js' ),
+    url = require('url'),
+    express = require('express'),
+    http = require('http'),
+    path = require('path');
 
 //Defining object variable to use mikrotik api in nodejs
 var routerSubMaskIp = '192.168.8';
@@ -90,6 +94,39 @@ function mikroConnection() {
       requestController.requestControllerMain( controllerMongo  );
     }
   }
+  
+var app = express();
+app.set("view engine", "ejs");
+
+app.use(express.static(path.join(__dirname, 'Views/public')));
+
+var server = http.createServer(app);
+
+app.get('/', function (req, res) {
+  res.render("index", {
+      "listObj": listObj
+  });
+});
+
+app.get('/index', function (req, res) {
+  res.render("index", {
+      "listObj": listObj
+  });
+});
+
+app.get('/users', function (req, res) {
+  allUsersData  = controllerMongo.getAllUserDetails( res );
+  
+});
+
+app.get('/user', function (req, res) {
+  res.render("user", {
+      "listObj": listObj
+  });
+});
+
+
+app.listen(4000);
 
   
 
