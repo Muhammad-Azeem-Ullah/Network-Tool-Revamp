@@ -1,8 +1,10 @@
 var ipCgiRequest    = require('request'),
     fileServer      = require('fs'),
     path            = require('path'),
-    lodash          = require('lodash');
+    lodash          = require('lodash'),
+    timestamp       = require('time-stamp');
 var controllerMongo ;
+
 
 
 var ipCgiRequestUrl = 'http://192.168.80.1/accounting/ip.cgi';
@@ -44,8 +46,8 @@ module.exports.requestControllerMain = function requestControllerMain( controlle
 // @Since 1.0
 // Getting data of requests transmission to internet
 function ipCgiRequestFunction(){
-
-    setInterval ( function () {
+   
+        
          ipCgiRequest({
              url : ipCgiRequestUrl,
              json : true
@@ -55,43 +57,78 @@ function ipCgiRequestFunction(){
                  result                    =  result.split( ' * *\n' );
                  requestsDetailsList     =  [];
                  generateRequestData( result , requestsDetailsList , callbackRequestsDetails = function( result , requestsDetailsList ){
-                     setTimeout( function() { generateRequestData( result , requestsDetailsList , callbackRequestsDetails ) } , 0 );
+                    setTimeout( function() { generateRequestData( result , requestsDetailsList , callbackRequestsDetails  ) } , 0 );
                  } )
              
              }
          });
-        }  , 1000 );
+  
 }
 //
 // @Since 1.0
 // Generating Request Details object for DB
 function generateRequestData( requestsDetails , requestsDetailsList , callbackRequestsDetails  ){
-
     var item = requestsDetails.shift();
     if( item ){
         item = item.split(' ');
-        var requestObject;
-        if( item[0].indexOf( routerSubMaskIp ) === -1 ){
-            var ipSearch = lodash.filter( ipDetails , { 'ipAddress': item[1]  } );
-            if( ipSearch[0] ){
-                requestObject = { ipAddress : item[1] , ipName : ipSearch[0].ipName , targetIp :  item[0] , numPackets :  item[3] , totalSz : item[2] , type : "Download" };
-            } else{
-                requestObject = { ipAddress : item[1] , ipName : 'Unknown' , targetIp :  item[0] , numPackets :  item[3] , totalSz : item[2] , type : "Upload" }
+        dnsIpAddress = item[0];
+        if(item[0].indexOf( routerSubMaskIp ) !== -1  ){
+            dnsIpAddress = item[1];
+        }
+        var getDnsIpAddress = new Promise( function ( resolve_new , reject ){
+            try{
+                controllerMongo.getDnsAddress( dnsIpAddress , resolve_new  );
+                
+            }catch(ex){
+              reject('error');
             }
+          });
+          getDnsIpAddress
+            .then( function whenOk( response ) {
+            dnsIpUrl = response.dsnUrl;
+            var requestObject;
+            if( item[0].indexOf( routerSubMaskIp ) === -1 ){
+                var ipSearch = lodash.filter( ipDetails , { 'ipAddress': item[1]  } );
+                if( ipSearch[0] ){
+                    requestObject = { ipAddress : item[1] , ipName : ipSearch[0].ipName , targetIp :  dnsIpUrl , numPackets :  item[3] , totalSz : item[2] , type : "Download" , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') };
+                } else{
+                    requestObject = { ipAddress : item[1] , ipName : 'Unknown' , targetIp :  dnsIpUrl , numPackets :  item[3] , totalSz : item[2] , type : "Upload" , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') }
+                }
+           }else {
 
-       }else {
-        var ipSearch = lodash.filter( ipDetails , { 'ipAddress': item[0]  } );
-       
-        if( ipSearch[0] ){
-            requestObject = { ipAddress : item[0] , ipName : ipSearch[0].ipName , targetIp :  item[1] , numPackets :  item[3] , totalSz : item[2] , type : "Download" };
-        } else{
-            requestObject = { ipAddress : item[0] , ipName : 'Unknown' , targetIp :  item[1] , numPackets :  item[3] , totalSz : item[2] , type : "Upload" }
-        }}
-        controllerMongo.saveUserDetails( requestObject  );
-        requestsDetailsList.push( requestObject );
-        callbackRequestsDetails( requestsDetails , requestsDetailsList , callbackRequestsDetails  );
+            var ipSearch = lodash.filter( ipDetails , { 'ipAddress': item[0]  } );
+            if( ipSearch[0] ){
+                requestObject = { ipAddress : item[0] , ipName : ipSearch[0].ipName , targetIp :  dnsIpUrl , numPackets :  item[3] , totalSz : item[2] , type : "Download"  , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') };
+            } else{
+                requestObject = { ipAddress : item[0] , ipName : 'Unknown' , targetIp : dnsIpUrl  , numPackets :  item[3] , totalSz : item[2] , type : "Upload"  , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') }
+            }}
+        var saverequest = new Promise( function ( resolve , reject ){
+            try {
+                controllerMongo.saveUserDetails( requestObject  , resolve );
+            } catch ( ex ){
+              reject('error');
+            }
+          });
+          saverequest
+            .then( function whenOk( response ) {
+                requestsDetailsList.push( requestObject );
+                callbackRequestsDetails( requestsDetails , requestsDetailsList , callbackRequestsDetails  );
+            })
+            .catch(function notOk(err) {
+              console.error(err)
+            });
+        })
+        .catch(function notOk(err) {
+          console.error(err)
+        });
+        
+        
     }
     else{
         controllerMongo.saverequestDetails( requestsDetailsList  );
+        ipCgiRequestFunction();
     }
   }
+
+
+  
