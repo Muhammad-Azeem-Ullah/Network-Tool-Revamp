@@ -52,7 +52,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="index.html">
+                <a class="navbar-brand" href="index">
                     <span>
                         <svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#"
                             xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg"
@@ -93,7 +93,7 @@
                             <a href="index"><i class="fas fa-tachometer-alt mr-1"></i>&nbsp;&nbsp;Dashboard</a>
                         </li>
                         <li>
-                            <a href="tables"><i class="fas fa-users mr-1"></i>&nbsp;&nbsp;All Users</a>
+                            <a href="users"><i class="fas fa-users mr-1"></i>&nbsp;&nbsp;All Users</a>
                         </li>
                         <!-- /.nav-second-level -->
                     </ul>
@@ -146,19 +146,25 @@
                                     <tr>
                                         <th>Machine Name</th>
                                         <th>Machine IP</th>
-                                        <th>Uploaded</th>
-                                        <th>Downloaded</th>
+                                        <th>Type</th>
+                                        <th>Target URL</th>
+                                        <th>Number of Packets</th>
+                                        <th>Packet Size</th>
+                                        <th>Time Stamp</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tablebody">
+                                <tbody id="tablebodyy">
                                     <% listObj.forEach(function(obj) { %>
-                                    <tr class="odd gradeX">
-                                        <td class="ipAddress"><%= obj.ipName %></td>
-                                        <td><%= obj.ipAddress %></td>
-                                        <td><%= obj.totalUpload %></td>
-                                        <td class="center"><%= obj.totalDownload %></td>
-                                    </tr>
-                                    <% }); %>
+                                        <tr class="odd gradeX">
+                                            <td><%= obj.ipName %></td>
+                                            <td ><%= obj.ipAddress %></td>
+                                            <td><%= obj.type %></td>
+                                            <td class="center"><%= obj.targetIp %></td>
+                                            <td class="center"><%= obj.numPackets %></td>
+                                            <td class="center"><%= obj.totalSz * 8/(1024.0 * 1024.0) %></td>
+                                            <td class="center"><%= obj.timestamp %></td>
+                                        </tr>
+                                        <% }); %>
                                 </tbody>
                             </table>
                             <!-- /.table-responsive -->
@@ -188,6 +194,8 @@
     <script src="../vendor/datatables/js/jquery.dataTables.min.js"></script>
     <script src="../vendor/datatables-plugins/dataTables.bootstrap.min.js"></script>
     <script src="../vendor/datatables-responsive/dataTables.responsive.js"></script>
+    <script src="js/user-request-details.js"></script>
+    
 
     <!-- Custom Theme JavaScript -->
     <script src="../dist/js/sb-admin-2.js"></script>
@@ -199,10 +207,8 @@
                 responsive: true
             });
         });
-        $("#tablebody").on('click', 'td', function () {
-            let ip = $(event.target).parent('tr').children('.ipAddress').html();
-            window.location.href = "user.html?id=" + ip;
-        });
+
+ 
     </script>
 
 </body>

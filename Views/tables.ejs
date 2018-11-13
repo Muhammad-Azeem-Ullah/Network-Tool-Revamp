@@ -152,9 +152,11 @@
                                 </thead>
                                 <tbody id="tablebody">
                                     <% listObj.forEach(function(obj) { %>
-                                    <tr class="odd gradeX">
-                                        <td class="ipAddress"><%= obj.ipName %></td>
-                                        <td><%= obj.ipAddress %></td>
+                                    <tr class="odd gradeX" style="
+                                    cursor: pointer;
+                                ">
+                                        <td><%= obj.ipName %></td>
+                                        <td  class="ipAddress"><%= obj.ipAddress %></td>
                                         <td><%= obj.totalUpload * 8/(1024.0 * 1024.0) %></td>
                                         <td class="center"><%= obj.totalDownload * 8/(1024.0 * 1024.0) %></td>
                                     </tr>

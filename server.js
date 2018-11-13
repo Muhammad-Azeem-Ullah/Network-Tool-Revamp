@@ -3,10 +3,15 @@
 var mikroNode            = require( 'mikronode' ),
     requestController    = require( './Controllers/request-controller.js' ),
     controllerMongo      = require( './Controllers/mongo-controller.js' ),
-    url = require('url'),
-    express = require('express'),
-    http = require('http'),
-    path = require('path');
+    url                  = require('url'),
+    express              = require('express'),
+    http                 = require('http'),
+    path                 = require('path');
+    WebSocket            = require('ws');
+
+
+
+const wss             = new WebSocket.Server({ port: 8081 });
 
 //Defining object variable to use mikrotik api in nodejs
 var routerSubMaskIp = '192.168.8';
@@ -20,6 +25,11 @@ const networkDnsLog               = 'networkDnsLog';
 const networkUserDetails          = 'networkUserDetails';
 const networkUserRequestDetails   = 'networkUserRequestDetails';
 
+var app = express();
+app.set("view engine", "ejs");
+app.use(express.static(path.join(__dirname, 'Views/public')));
+var server = http.createServer(app);
+
 
 const databasePromise = new Promise( function ( resolve , reject ){
   try{
@@ -32,11 +42,45 @@ const databasePromise = new Promise( function ( resolve , reject ){
 databasePromise
   .then( function whenOk( response ) {
     mikroConnection();
+    app.get('/', function (req, res) {
+      res.render("index", {
+          "listObj": []
+      });
+    });
+    
+    app.get('/index', function (req, res) {
+      res.render("index", {
+          "listObj": []
+      });
+    });
+    
+    app.get('/users', function (req, res) {
+      controllerMongo.getAllUserDetails( res );
+    });
+    
+    app.get('/user', function (req, res) {
+      controllerMongo.getAllUserRequestDetails( req.query.ip , res );
+
+    });
+    
+    
+    app.listen(4000);
   })
   .catch(function notOk(err) {
     console.error(err)
   });
+  wss.on('connection', ws => {
+    console.log( "connected" );
+    ws.on('message', message => {
+      console.log( "message" );
+      ws.send( "brrrrr" );
+      console.log( message );
+      var msgObj = JSON.parse( message );
+      controllerMongo.getAllUserRequestDetailsByIp( msgObj.ipAddress , msgObj.timestamp , ws);
+      
+    })
 
+  });
 
 //
 //
@@ -59,6 +103,7 @@ function mikroConnection() {
 
        //Trap for getDns Channel for DNS details
       channelDnsDetails.on( 'trap' , function( data ){
+        console.log( data );
           console.log( 'DNS request failed' );
       });
 
@@ -94,39 +139,17 @@ function mikroConnection() {
       requestController.requestControllerMain( controllerMongo  );
     }
   }
+
+
   
-var app = express();
-app.set("view engine", "ejs");
-
-app.use(express.static(path.join(__dirname, 'Views/public')));
-
-var server = http.createServer(app);
-
-app.get('/', function (req, res) {
-  res.render("index", {
-      "listObj": listObj
-  });
-});
-
-app.get('/index', function (req, res) {
-  res.render("index", {
-      "listObj": listObj
-  });
-});
-
-app.get('/users', function (req, res) {
-  allUsersData  = controllerMongo.getAllUserDetails( res );
-  
-});
-
-app.get('/user', function (req, res) {
-  res.render("user", {
-      "listObj": listObj
-  });
-});
+//
+//
+// @since 1.0
+// Connecting to the mikroTik router live and performing for db query
 
 
-app.listen(4000);
+
+
 
   
 
