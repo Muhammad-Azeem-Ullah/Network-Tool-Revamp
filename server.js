@@ -9,9 +9,10 @@ var mikroNode            = require( 'mikronode' ),
     path                 = require('path');
     WebSocket            = require('ws');
 
+    
 
-
-const wss             = new WebSocket.Server({ port: 8081 });
+const wss                     = new WebSocket.Server({ port: 8081 });
+const wssForUsers             = new WebSocket.Server({ port: 8082 });
 
 //Defining object variable to use mikrotik api in nodejs
 var routerSubMaskIp = '192.168.8';
@@ -69,17 +70,21 @@ databasePromise
   .catch(function notOk(err) {
     console.error(err)
   });
+
   wss.on('connection', ws => {
     console.log( "connected" );
     ws.on('message', message => {
-      console.log( "message" );
-      ws.send( "brrrrr" );
-      console.log( message );
       var msgObj = JSON.parse( message );
       controllerMongo.getAllUserRequestDetailsByIp( msgObj.ipAddress , msgObj.timestamp , ws);
-      
     })
+  });
 
+  wssForUsers.on('connection', ws => {
+    console.log( "connected" );
+    ws.on('message', message => {
+      var msgObj = JSON.parse( message );
+      controllerMongo.getAllUserDetailsWs( ws);
+    })
   });
 
 //
@@ -97,9 +102,9 @@ function mikroConnection() {
       var channelDnsDetails    =   mtConnection.openChannel( "getDns" );
       //Command url to send request torouter for dns details
       channelDnsDetails.write( '/ip/dns/cache/getall' );
-      setTimeout(function () {
+      setInterval(function () {
         channelDnsDetails.write( '/ip/dns/cache/getall' );
-      }, 1000 * 60 * 60 );
+      }, 5000  );
 
        //Trap for getDns Channel for DNS details
       channelDnsDetails.on( 'trap' , function( data ){
@@ -137,15 +142,9 @@ function mikroConnection() {
     else{
       controllerMongo.saveDnsDetails( dnsdetailsList ); 
       requestController.requestControllerMain( controllerMongo  );
+     
     }
   }
-
-
-  
-//
-//
-// @since 1.0
-// Connecting to the mikroTik router live and performing for db query
 
 
 

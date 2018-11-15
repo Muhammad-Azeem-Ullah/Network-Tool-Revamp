@@ -1,13 +1,8 @@
-/*var ws = new WebSocket( "ws://localhost:8081" );
+var ws = new WebSocket( "ws://localhost:8081" );
 currentTimeStamp = getDateToTimeStamp();
 
-
-
-
-
 ws.onopen = function (){
-    alert("Connected with Coupon Stalls");
-    alert("Welcome !");
+  
     var url = new URL( window.location.href );
     var ip = url.searchParams.get("ip");
     ws.send( JSON.stringify({
@@ -16,26 +11,41 @@ ws.onopen = function (){
     }));
     currentTimeStamp = getDateToTimeStamp();
    
- /*   setInterval(function(){ 
+   
+   setInterval(function(){ 
         var url = new URL( window.location.href );
         var ip = url.searchParams.get("ip");
         ws.send( JSON.stringify({
             timestamp : currentTimeStamp,
             ipAddress : ip
         }));
-        currentTimeStamp = getDateToTimeStamp();
-     }, 0);
+     }, 1000);
+     
 
   };
   
   ws.onmessage = function ( payload )
   {
-      alert( payload );
+  
+    dataResult = JSON.parse( payload.data );
+      if( dataResult.Data !== 'noData' ){
+        var outputHtml = ''; 
+        var count = 0;
+        dataResult.Data.forEach(function(obj) {
+
+            $('#dataTables-example').DataTable().row.add([
+                obj.ipName , obj.ipAddress ,  obj.type ,  obj.targetIp ,  obj.numPackets ,  obj.totalSz * 8/(1024.0 * 1024.0) , obj.timestamp 
+              ]).draw();
+             });
+             currentTimeStamp = getDateToTimeStamp();
+             
+
+      }
    
      
   }
   ws.onclose = function (){
-    alert("Disconnected with Coupon Stalls");
+ //   alert("Disconnected with Coupon Stalls");
   };
 
 
@@ -58,9 +68,18 @@ function getDateToTimeStamp() {
     var d               = new Date(); // for now
     var hours           = d.getHours(); // => 9
     var min             = d.getMinutes(); // =>  30
-    var sec             = d.getSeconds()
+    var sec             = d.getSeconds();
+    if( hours < 10 )
+    {
+        hours = "0"+ hours;
+    } if( min < 10)
+    {
+        min = "0"+ min;
+    } if ( sec < 10 ) {
+        sec = "0"+ sec;
+    }
     currentTime         =  hours + ":" +  min +":" + sec;
-    CurrentTimeStamp    = currentTime  + today ;
+    CurrentTimeStamp    = yyyy+''+mm+''+dd+''+hours+''+min+''+sec ;
     return CurrentTimeStamp;
 
-}   */
+}   

@@ -19,7 +19,9 @@ filePath = path.join(__dirname, '../Models/read.txt');
 
 module.exports.requestControllerMain = function requestControllerMain( controllerMongo_ ) {
 
+   
     controllerMongo = controllerMongo_;
+
     const ipDetailsPromise = new Promise( function ( resolve , reject ){
         try{
             fileServer.readFile( filePath,  { encoding: 'utf-8' } , function(err, result) {
@@ -48,20 +50,24 @@ module.exports.requestControllerMain = function requestControllerMain( controlle
 function ipCgiRequestFunction(){
    
         
-         ipCgiRequest({
-             url : ipCgiRequestUrl,
-             json : true
-         }, function ( error , response , result ) {
-             if ( !error && response.statusCode === 200 && result !== undefined ) {
-                 // Spliting data for per requests
-                 result                    =  result.split( ' * *\n' );
-                 requestsDetailsList     =  [];
-                 generateRequestData( result , requestsDetailsList , callbackRequestsDetails = function( result , requestsDetailsList ){
-                    setTimeout( function() { generateRequestData( result , requestsDetailsList , callbackRequestsDetails  ) } , 0 );
-                 } )
-             
-             }
-         });
+        
+
+         setInterval(function () {
+            ipCgiRequest({
+                url : ipCgiRequestUrl,
+                json : true
+            }, function ( error , response , result ) {
+                if ( !error && response.statusCode === 200 && result !== undefined ) {
+                    // Spliting data for per requests
+                    result                    =  result.split( ' * *\n' );
+                    requestsDetailsList     =  [];
+                    generateRequestData( result , requestsDetailsList , callbackRequestsDetails = function( result , requestsDetailsList ){
+                       setTimeout( function() { generateRequestData( result , requestsDetailsList , callbackRequestsDetails  ) } , 0 );
+                    } )
+                
+                }
+            });
+          }, 1000  );
   
 }
 //
@@ -90,19 +96,20 @@ function generateRequestData( requestsDetails , requestsDetailsList , callbackRe
             if( item[0].indexOf( routerSubMaskIp ) === -1 ){
                 var ipSearch = lodash.filter( ipDetails , { 'ipAddress': item[1]  } );
                 if( ipSearch[0] ){
-                    requestObject = { ipAddress : item[1] , ipName : ipSearch[0].ipName , targetIp :  dnsIpUrl , numPackets :  item[3] , totalSz : item[2] , type : "Download" , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') };
+                    requestObject = { ipAddress : item[1] , ipName : ipSearch[0].ipName , targetIp :  dnsIpUrl , numPackets :  item[3] , totalSz : item[2] , type : "Download" , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') , searchnonce : timestamp( 'YYYYMMDDHHmmss' ) };
                 } else{
-                    requestObject = { ipAddress : item[1] , ipName : 'Unknown' , targetIp :  dnsIpUrl , numPackets :  item[3] , totalSz : item[2] , type : "Upload" , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') }
+                    requestObject = { ipAddress : item[1] , ipName : 'Unknown' , targetIp :  dnsIpUrl , numPackets :  item[3] , totalSz : item[2] , type : "Upload" , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') , searchnonce : timestamp( 'YYYYMMDDHHmmss' ) }
                 }
            }else {
 
             var ipSearch = lodash.filter( ipDetails , { 'ipAddress': item[0]  } );
             if( ipSearch[0] ){
-                requestObject = { ipAddress : item[0] , ipName : ipSearch[0].ipName , targetIp :  dnsIpUrl , numPackets :  item[3] , totalSz : item[2] , type : "Download"  , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') };
+                requestObject = { ipAddress : item[0] , ipName : ipSearch[0].ipName , targetIp :  dnsIpUrl , numPackets :  item[3] , totalSz : item[2] , type : "Download"  , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') , searchnonce : timestamp( 'YYYYMMDDHHmmss' )};
             } else{
-                requestObject = { ipAddress : item[0] , ipName : 'Unknown' , targetIp : dnsIpUrl  , numPackets :  item[3] , totalSz : item[2] , type : "Upload"  , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') }
-            }}
-        var saverequest = new Promise( function ( resolve , reject ){
+                requestObject = { ipAddress : item[0] , ipName : 'Unknown' , targetIp : dnsIpUrl  , numPackets :  item[3] , totalSz : item[2] , type : "Upload"  , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') , searchnonce : timestamp( 'YYYYMMDDHHmmss' ) }
+            }
+        }
+         var saverequest = new Promise( function ( resolve , reject ){
             try {
                 controllerMongo.saveUserDetails( requestObject  , resolve );
             } catch ( ex ){
@@ -116,7 +123,8 @@ function generateRequestData( requestsDetails , requestsDetailsList , callbackRe
             })
             .catch(function notOk(err) {
               console.error(err)
-            });
+            }); 
+            
         })
         .catch(function notOk(err) {
           console.error(err)
@@ -125,8 +133,9 @@ function generateRequestData( requestsDetails , requestsDetailsList , callbackRe
         
     }
     else{
-        controllerMongo.saverequestDetails( requestsDetailsList  );
-        ipCgiRequestFunction();
+       // controllerMongo.saverequestDetails( requestsDetailsList  );
+        //console.log( requestsDetailsList );
+        //ipCgiRequestFunction();
     }
   }
 
