@@ -1,1 +1,135 @@
+<!DOCTYPE html>
+<html>
 
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Page Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel='stylesheet' href='/css/bootstrap.min.css' />
+    <link rel='stylesheet' href='/css/umer.css' />
+
+</head>
+
+<body class="h-100">
+    <canvas id="line-chart" class="" width="" height="" style="max-height: 70%; min-height: 70%;"></canvas>
+
+    <script src="/js/jquery-3.3.1.min.js"></script>
+    <script src="/js/popper.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/moment.min.js"></script>
+    <script src="/js/Chart.min.js"></script>
+    <script>
+        let arrLabels = [Date.now()];
+        let arrDatasets = [];
+
+        var myChart = new Chart(document.getElementById("line-chart"), {
+            type: 'line',
+            data: {
+                labels: arrLabels,
+                datasets: arrDatasets
+            },
+            options: {
+                title: {
+                    display: true,
+                    text: 'Speed in Mb/sec over time'
+                },
+                legend: {
+                    display: false
+                },
+                scales: {
+                    xAxes: [{
+                        type: 'time',
+                        time: {
+                            unit: 'second',
+                            stepSize: 5,
+                            displayFormats: {
+                                minute: 'h:mm a'
+                            }
+                        }
+                    }]
+                }
+            }
+        });
+
+        let userArray = [{
+                username: "umerPc",
+                downloadSpeed: "1"
+            },
+            {
+                username: "TanveerPc",
+                downloadSpeed: "3"
+            },
+            {
+                username: "NabeelPc",
+                downloadSpeed: "2"
+            },
+            {
+                username: "WaqasPc",
+                downloadSpeed: "5"
+            },
+            {
+                username: "BilalPc",
+                downloadSpeed: "4"
+            }
+        ];
+
+        userArray.forEach(user => {
+            arrDatasets.push({
+                data: [],
+                label: user.username,
+                borderColor: "#000000".replace(/0/g, function () {
+                    return (~~(Math.random() * 16)).toString(16);
+                }),
+                fillColor: "#000000".replace(/0/g, function () {
+                    return (~~(Math.random() * 16)).toString(16);
+                }),
+                fill: 'start'
+            });
+        });
+
+        $.each(arrDatasets, function (index, value) {
+            value.data.push(userArray[index].downloadSpeed);
+        });
+
+        myChart.update();
+        userArray.length = 0;
+        // replace by socket message recieve
+        // get 
+        setInterval(function () {
+            let timer = Date.now();
+            myChart.data.labels.push(timer);
+
+            let userArray = [{
+                    username: "umerPc",
+                    downloadSpeed: Math.floor(Math.random() * 20) + 1
+                },
+                {
+                    username: "TanveerPc",
+                    downloadSpeed: Math.floor(Math.random() * 10) + 1
+                },
+                {
+                    username: "NabeelPc",
+                    downloadSpeed: Math.floor(Math.random() * 30) + 1
+                },
+                {
+                    username: "WaqasPc",
+                    downloadSpeed: Math.floor(Math.random() * 50) + 1
+                },
+                {
+                    username: "BilalPc",
+                    downloadSpeed: Math.floor(Math.random() * 100) + 1
+                }
+            ];
+
+            $.each(arrDatasets, function (index, value) {
+                value.data.push(userArray[index].downloadSpeed);
+            });
+
+            myChart.update();
+            userArray.length = 0;
+        }, 5000);
+    </script>
+</body>
+
+</html>
