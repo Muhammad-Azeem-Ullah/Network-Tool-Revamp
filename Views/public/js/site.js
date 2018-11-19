@@ -11,7 +11,8 @@ var ws = new WebSocket( "ws://localhost:8082" );
 $(document).ready(function () {
     $('#dataTables-example').DataTable({
         responsive: true,
-        paging: false
+        paging: false ,
+        select: true , 
     });
     $('#dataTables-example').DataTable().rows().every( function ( rowIdx, tableLoop, rowLoop ) {
         var data = this.data();
@@ -34,41 +35,39 @@ $("#tablebody").on('click', '#btnClear', function () {
     return false;
 });
 
-
-
-
 ws.onopen = function (){
 
+    
    setInterval(function(){ 
 
         ws.send( JSON.stringify({
             request : 'Request Data' ,
         }));
-     }, 20);
+     }, 1000);
      
 
   };
   
   ws.onmessage = function ( payload )
   {
-
+    var table = $('#dataTables-example').DataTable();
     dataResult = JSON.parse( payload.data );
       if( dataResult.Data !== 'noData' ){
         var outputHtml = ''; 
         var count = 0;
         dataResult.Data.forEach(function(obj) {
-             jQuery( "#"+ obj.ipAddress.split('.').join('_') + "_upload" ).html( parseInt ( obj.totalUpload ) * 8/(1024.0 * 1024.0) );
-             jQuery( "#"+ obj.ipAddress.split('.').join('_') + "_download" ).html( parseInt (obj.totalDownload ) * 8/(1024.0 * 1024.0) );
-      });
+
+
+            data = table.row('.'+obj.ipAddress.split('.').join('_')).data();
+            data[2] = Number( parseFloat( obj.totalUpload ) /(1024.0 * 1024.0) ) ;
+            data[3] = Number( parseFloat( obj.totalDownload ) /(1024.0 * 1024.0) );
+            table.row('.'+obj.ipAddress.split('.').join('_')).data( data )
+            });
+            table.draw();
     }
 }
-  ws.onclose = function (){
-  
- //   alert("Disconnected with Coupon Stalls");
-  };
-
   setInterval(function(){ 
-
+    var table = $('#dataTables-example').DataTable();
       $( ".ipAddress" ).each(function() {
 
         ipAddress = $( this ).attr( "id" ).split('.').join('_') ;
@@ -82,42 +81,67 @@ ws.onopen = function (){
             userUspeedObj.attr( 'data-timestamp' , getDateToTimeStamp() );
         } else {
             timeDiff =  getDateToTimeStamp() - parseInt( userUspeedObj.attr( 'data-timestamp' ) );
-            uspeed = ( parseFloat ( userUploadObj.html() ) - parseFloat( userUspeedObj.attr( 'data-upload' ) )  ) / timeDiff;
-            totalUpload += ( parseFloat ( userUploadObj.html() ) - parseFloat( userUspeedObj.attr( 'data-upload' ) )  );
-            userUspeedObj.html( uspeed );
+            if( timeDiff > 0 )
+            {
 
 
-            userUspeedObj.attr( "data-upload" ,  userUploadObj.html()   );
-            userUspeedObj.attr( 'data-timestamp' , getDateToTimeStamp() );
+                uspeed = ( parseFloat ( userUploadObj.html() ) - parseFloat( userUspeedObj.attr( 'data-upload' ) )  ) / timeDiff;
+                totalUpload += ( parseFloat ( userUploadObj.html() ) - parseFloat( userUspeedObj.attr( 'data-upload' ) )  );
+                data = table.row('.'+ipAddress).data();
+                data[4] = Number( parseFloat( uspeed ) ).toFixed( 5 ) * 8 ;
+                table.row('.'+ipAddress).data( data )
+                userUspeedObj.attr( "data-upload" ,  userUploadObj.html()   );
+                userUspeedObj.attr( 'data-timestamp' , getDateToTimeStamp()  );
+
+
+            }
         }
 
         if( userDspeedObj.attr( 'data-timestamp' ) == undefined )
         {
             userDspeedObj.attr( 'data-timestamp' , getDateToTimeStamp() );
         } else {
+
             timeDiff = parseInt( getDateToTimeStamp() ) - parseInt( userDspeedObj.attr( 'data-timestamp' ) );
-            uspeed = ( parseFloat ( userDownloadObj.html() ) - parseFloat( userDspeedObj.attr( 'data-download' ) )  ) / timeDiff;
-            userDspeedObj.html( uspeed );
-            totalDownload += ( parseFloat ( userDownloadObj.html() ) - parseFloat( userDspeedObj.attr( 'data-download' ) )  ) ;
+            if( timeDiff > 0 )
+            {
+               
+                dspeed = ( parseFloat ( userDownloadObj.html() ) - parseFloat( userDspeedObj.attr( 'data-download' ) )  ) / timeDiff;
+                data = table.row('.'+ipAddress).data();
+                data[5] = Number( parseFloat( dspeed ) ).toFixed( 5 ) * 8 ;
+                table.row('.'+ipAddress).data( data )
+                totalDownload += ( parseFloat ( userDownloadObj.html() ) - parseFloat( userDspeedObj.attr( 'data-download' ) )  ) ;
+                userDspeedObj.attr( "data-download" ,  userDownloadObj.html()   );
+                userDspeedObj.attr( 'data-timestamp' , getDateToTimeStamp() );
 
-            userDspeedObj.attr( "data-download" ,  userDownloadObj.html()   );
-            userDspeedObj.attr( 'data-timestamp' , getDateToTimeStamp() );
+            }
         }
-
-
-
       });
-
-
-      $(".totalUploadId").html( totalUpload );
-      $(".totalDownloadId").html( totalDownload );
-  
-
+        var numbers = table.column( 4 ).data(); // sums to 100
+        var sum = 0;
+        for (var i = 0; i < numbers.length; i++) {
+            sum += parseFloat( numbers[i] );
+        }
+        if( sum > 0)
+        {
+            $(".totalUploadId").html(  sum );
+        }
+   
+        var numbers = table.column( 5 ).data(); // sums to 100
+        var sum = 0;
+        for (var i = 0; i < numbers.length; i++) {
+            sum += parseFloat( numbers[i] );
+        }
+        if( sum > 0)
+        {
+            $(".totalDownloadId").html(  sum );
+        }
       
+        table.draw();
 
- }, 1000);
 
- 
+ }, 2000);
+
 
 
 
@@ -151,7 +175,6 @@ ws.onopen = function (){
     } if ( sec < 10 ) {
         sec = "0"+ sec;
     }
-    currentTime         =  hours + ":" +  min +":" + sec;
     CurrentTimeStamp    = yyyy+''+mm+''+dd+''+hours+''+min+''+sec ;
     return CurrentTimeStamp;
 

@@ -34,8 +34,7 @@ var server = http.createServer(app);
 
 const databasePromise = new Promise( function ( resolve , reject ){
   try{
-    controllerMongo.createConnection( databaseName , networkDnsLog , networkUserDetails , networkUserRequestDetails  );
-    resolve( 'fine' );
+    controllerMongo.createConnection( databaseName , networkDnsLog , networkUserDetails , networkUserRequestDetails  ,resolve );
   }catch(ex){
     reject('error');
   }

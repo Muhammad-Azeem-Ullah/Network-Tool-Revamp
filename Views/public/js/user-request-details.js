@@ -37,6 +37,7 @@ ws.onopen = function (){
                 obj.ipName , obj.ipAddress ,  obj.type ,  obj.targetIp ,  obj.numPackets ,  obj.totalSz * 8/(1024.0 * 1024.0) , obj.timestamp 
               ]).draw();
              });
+             $('#dataTables-example').DataTable().draw();
              currentTimeStamp = getDateToTimeStamp();
              
 

@@ -1,13 +1,15 @@
 
 var http              = require('http'),
     MongoClient       = require('mongodb').MongoClient,
-    mikroNode         = require( 'mikronode' );
+    mikroNode         = require( 'mikronode' ),
+    handleError      = require('errorhandler');
 var url               = "mongodb://localhost:27017/";
 
 const sizeRequestsCollection = 10; // Value is in GBs
 
 //Defining object varaible to use mikrotik api in nodejs
-var databaseObject; 
+/////////////////////////////////////////////////////////
+var databaseObject              ;
 var networkDnsLog               ;
 var networkUserDetails          ;
 var networkUserRequestDetails   ;
@@ -19,7 +21,7 @@ var mikroTipObject  =  new mikroNode( routerIp );
 //
 //@Since 1.0
 //Module exports for mongodb intraction
- module.exports.createConnection =  function createConnnectWithMongo( dbName , networkDnsLog_  , networkUserDetails_ , networkUserRequestDetails_  ){
+ module.exports.createConnection =  function createConnnectWithMongo( dbName , networkDnsLog_  , networkUserDetails_ , networkUserRequestDetails_  , resolve_callback ){
 
   MongoClient.connect(url, { useNewUrlParser: true } , function(err, db) {
     if (err) throw err;
@@ -29,6 +31,7 @@ var mikroTipObject  =  new mikroNode( routerIp );
     });
     databaseObject.createCollection( networkUserDetails_ , function(err, res) {
       if (err) throw err;
+      databaseObject.collection( networkUserDetails_ ).createIndex({  ipAddress:1 });
     });
      databaseObject.createCollection( networkUserRequestDetails_ , function(err, res) {
       if (err) throw err;
@@ -38,18 +41,26 @@ var mikroTipObject  =  new mikroNode( routerIp );
     networkUserDetails                = networkUserDetails_;
     networkUserRequestDetails         = networkUserRequestDetails_;
 
-    setInterval(function () {
+
+ 
+/*
+    //setInterval(function () {
       databaseObject.collection( networkUserRequestDetails_ ).stats(function(err, results) {
-        if( results.storageSize > sizeRequestsCollection * 1024 * 1024 * 1024 / 70   )// one row contains 70 bytes
-        {
-          databaseObject.collection( networkUserRequestDetails_ ).remove().skip(  sizeRequestsCollection * 1024 * 1024 * 1024 / (results.storageSize / results.count) ).toArray(function(err, result_b) {
+     //   if( results.storageSize > sizeRequestsCollection * 1024 * 1024 * 1024 / 70   )// one row contains 70 bytes
+     //   {
+          databaseObject.collection( networkUserRequestDetails_ ).find().skip( parseInt( sizeRequestsCollection * 1024 * 1024 * 1024  / (results.storageSize / results.count)  ) ).toArray(function(err, result_b) {
+            console.log( result_b );
+            console.log( ( sizeRequestsCollection ) );
+            console.log( (results.storageSize / results.count) );
+            process.exit();
           });
-        }
+        //}
     });
 
-    }, 10000  );
-  
+    //}, 0  );*/
+    resolve_callback( 'fine' );
   });
+
 }
 
 
@@ -95,7 +106,7 @@ module.exports.getDnsAddress =  function getDnsAddress( ipAddress , resolve )
 }
 
 
-module.exports.saveUserDetails =  function saveUserDetails( userDetail , saverequest ){
+module.exports.saveUserDetails =  function saveUserDetails( userDetail  ){
 
   if( userDetail.type  === 'Download' ){
     userEntry = {
@@ -107,7 +118,7 @@ module.exports.saveUserDetails =  function saveUserDetails( userDetail , savereq
     } ;
   } else {
     userEntry = {
-      '_id'      : userDetail.ipAddress ,
+      '_id'            : userDetail.ipAddress ,
       'ipAddress'      : userDetail.ipAddress ,
       'ipName'         : userDetail.ipName ,
       'totalUpload'    : userDetail.totalSz ,
@@ -118,34 +129,18 @@ module.exports.saveUserDetails =  function saveUserDetails( userDetail , savereq
     if (err) throw err;
  
   });
- 
-  databaseObject.collection( networkUserDetails ).find( { 'ipAddress' : userEntry.ipAddress  }   ).toArray(function(err, result) {
-    if (err) throw err;
-    if( result.length > 1 )
-    {
-      console.log( "Found dup" );
-      console.log( result );
-      process.exit();
-    }
-    if( result.length > 0 ){
-      delete userEntry._id;
-      result = result[0];
-      result.totalUpload    = parseInt ( result.totalUpload ) + parseInt( userEntry.totalUpload );
-      result.totalDownload  = parseInt ( result.totalDownload ) + parseInt ( userEntry.totalDownload );
 
-      databaseObject.collection( networkUserDetails ).updateOne( { 'ipAddress' : result.ipAddress  } , { $set: result } , function(err, obj) {
-        if (err) throw err;
-        saverequest( 'fine' );
-      })
-      
-    } else {
-     delete userEntry._id;
-      databaseObject.collection( networkUserDetails ).insertOne( userEntry , function(err, res) {
-        if (err) throw err;
-        saverequest( 'fine' );
-      });
+  databaseObject.collection ( networkUserDetails ).findOneAndUpdate(
+     { 'ipAddress' : userEntry.ipAddress  }  ,
+    { $inc: { "totalUpload": userEntry.totalUpload , "totalDownload" : userEntry.totalDownload } , $set : {  "ipName" : userEntry.ipName  } },
+    {
+       upsert: true,
     }
-  });
+    
+
+);
+
+
 
 }
 module.exports.saverequestDetails =  function saverequestDetails( requestDetails  ) {
@@ -178,11 +173,19 @@ module.exports.getAllUserRequestDetailsByIp =  function getAllUserRequestDetails
   databaseObject.collection( networkUserRequestDetails ).find( { $and: [ { 'searchnonce' : { $gte: timestamp } } , { 'ipAddress' : ipAddress } ] } ).limit( 500 ).toArray(function( err, result ) {
     if (err) throw err;
     if( result.length > 0 ){
-      webSocket.send( JSON.stringify( { 'Data' : result } ) );
+      //webSocket.send(  JSON.stringify( { 'Data' : result } ) );
+      data = JSON.stringify( { 'Data' : result } );
+      webSocket.send(data, function data(err) {
+        if (err) handleError(err);
+      });
 
     }
     else{
-      webSocket.send( JSON.stringify( { 'Data' : 'noData' } ) );
+      //webSocket.send( JSON.stringify( { 'Data' : 'noData' } ) );
+      data = JSON.stringify( { 'Data' : 'noData' } );
+      webSocket.send(data, function data(err) {
+        if (err) handleError(err);
+      });
     }
 
 
@@ -193,10 +196,18 @@ module.exports.getAllUserDetailsWs =  function getAllUserDetailsWs( webSocket ) 
   databaseObject.collection( networkUserDetails ).find().limit( 500 ).toArray(function( err, result ) {
     if (err) throw err;
     if( result.length > 0 ){
-      webSocket.send( JSON.stringify( { 'Data' : result } ) );
+     // webSocket.send( JSON.stringify( { 'Data' : result } ) );
+      data = JSON.stringify( { 'Data' : result } );
+      webSocket.send(data, function data(err) {
+        if (err) handleError(err);
+      });
     }
     else{
-      webSocket.send( JSON.stringify( { 'Data' : 'noData' } ) );
+     // webSocket.send( JSON.stringify( { 'Data' : 'noData' } ) );
+      data = JSON.stringify( { 'Data' : 'noData'  } );
+      webSocket.send(data, function data(err) {
+        if (err) handleError(err);
+      });
     }
 
 

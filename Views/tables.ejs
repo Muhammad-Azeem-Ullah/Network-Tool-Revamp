@@ -112,7 +112,7 @@
                                 </div>
                                 <div class="col-xs-9 text-right">
                                     <div class="huge totalUploadID">6</div>
-                                    <div>MB</div>
+                                    <div>Mb/s</div>
                                 </div>
                             </div>
                         </div>
@@ -127,7 +127,7 @@
                                 </div>
                                 <div class="col-xs-9 text-right">
                                     <div class="huge totalDownloadID">12</div>
-                                    <div>MB</div>
+                                    <div>Mb/s</div>
                                 </div>
                             </div>
                         </div>
@@ -146,8 +146,8 @@
                                         <th>Machine IP</th>
                                         <th>Uploaded (MBs)</th>
                                         <th>Downloaded (MBs) </th>
-                                        <th>Upload Speed (MB/s) </th>
-                                        <th>Download Speed (MB/s) </th>
+                                        <th>Upload Speed (Mb/s) </th>
+                                        <th>Download Speed (Mb/s) </th>
                                     </tr>
                                 </thead>
                                 <tbody id="tablebody">
@@ -155,16 +155,16 @@
                                     var count = 0;
                                     listObj.forEach(function(obj) { 
                                         %>
-                                    <tr class="odd gradeX" style="
+                                    <tr class="odd gradeX <%= obj.ipAddress.split('.').join('_') %>" style="
                                     cursor: pointer;
                                 ">
                             
                                         <td><%= obj.ipName %></td>
                                         <td  class="ipAddress" id="<%= obj.ipAddress %>"><%= obj.ipAddress %></td>
-                                        <td id="<%= obj.ipAddress.split('.').join('_') %>_upload" ><%= obj.totalUpload * 8/(1024.0 * 1024.0) %></td>
-                                        <td id="<%= obj.ipAddress.split('.').join('_') %>_download" class="center"><%= obj.totalDownload * 8/(1024.0 * 1024.0) %></td>
-                                        <td id="<%= obj.ipAddress.split('.').join('_') %>_uspeed" style="text-align: center;" data-upload="<%= obj.totalUpload * 8/(1024.0 * 1024.0) %>"></td>
-                                        <td id="<%= obj.ipAddress.split('.').join('_') %>_dspeed"  style="text-align: center;" data-download="<%= obj.totalDownload * 8/(1024.0 * 1024.0) %>"></td>
+                                        <td id="<%= obj.ipAddress.split('.').join('_') %>_upload" ><%= Number( parseFloat( obj.totalUpload ) /(1024.0 * 1024.0) ).toFixed( 5 ); %></td>
+                                        <td id="<%= obj.ipAddress.split('.').join('_') %>_download" class="center"><%= Number( parseFloat( obj.totalDownload ) /(1024.0 * 1024.0) ).toFixed( 5 ); %></td>
+                                        <td id="<%= obj.ipAddress.split('.').join('_') %>_uspeed" style="text-align: center;" data-upload="<%= Number( parseFloat( obj.totalUpload ) /(1024.0 * 1024.0) ).toFixed( 5 ); %>">0.0</td>
+                                        <td id="<%= obj.ipAddress.split('.').join('_') %>_dspeed"  style="text-align: center;" data-download="<%= Number( parseFloat( obj.totalDownload ) /(1024.0 * 1024.0) ).toFixed( 5 ); %>">0.0</td>
                                    
                                     </tr>
                                     <% 
