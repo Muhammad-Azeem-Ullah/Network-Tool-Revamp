@@ -83,4 +83,55 @@ function getDateToTimeStamp() {
     CurrentTimeStamp    = yyyy+''+mm+''+dd+''+hours+''+min+''+sec ;
     return CurrentTimeStamp;
 
-}   
+}
+
+$(document).ready(function () {
+    $('#dataTables-example').DataTable({
+        responsive: true 
+    });
+});
+
+$.fn.dataTable.ext.search.push(
+    function( settings, data, dataIndex ) {
+        var min =  Date.parse( $('#date_from').val() );
+        var max =  Date.parse( $('#date_to').val() );
+        
+        var age =  Date.parse( data[6] )   || 0; // use data for the age column
+ 
+        if ( ( isNaN( min ) && isNaN( max ) ) ||
+             ( isNaN( min ) && age <= max ) ||
+             ( min <= age   && isNaN( max ) ) ||
+             ( min <= age   && age <= max ) )
+        {
+            return true;
+        }
+        return false;
+    }
+);
+ 
+$(document).ready(function() {
+    var table = $('#dataTables-example').DataTable();
+    // Event listener to the two range filtering inputs to redraw on input
+    $('#date_to, #date_from').change( function() {
+        table.draw();
+    } );
+});
+
+    $(document).ready(function () {
+        // create DateTimePicker from input HTML element
+        $("#date_to").kendoDateTimePicker({
+            format: "HH:mm:ss yyyy/MM/dd" ,
+            timeFormat: "HH:mm:ss" 
+            
+        });
+        $("#date_from").kendoDateTimePicker({
+            format: "HH:mm:ss yyyy/MM/dd" ,
+            timeFormat: "HH:mm:ss" 
+           
+        });
+    });
+
+
+
+
+
