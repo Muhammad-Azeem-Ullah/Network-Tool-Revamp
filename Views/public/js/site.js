@@ -21,8 +21,7 @@ $(document).ready(function () {
     
     } );
     
-    $(".totalUploadId").html( totalUpload );
-    $(".totalDownloadId").html( totalDownload );
+
  
 });
 $("#tablebody").on('click', 'td', function () {
@@ -37,7 +36,6 @@ $("#tablebody").on('click', '#btnClear', function () {
 
 ws.onopen = function (){
 
-    
    setInterval(function(){ 
 
         ws.send( JSON.stringify({
@@ -59,8 +57,13 @@ ws.onopen = function (){
 
 
             data = table.row('.'+obj.ipAddress.split('.').join('_')).data();
-            data[2] = Number( parseFloat( obj.totalUpload ) /(1024.0 * 1024.0) ) ;
-            data[3] = Number( parseFloat( obj.totalDownload ) /(1024.0 * 1024.0) );
+            if( data != undefined )
+            {
+                data[2] = Number( parseFloat( obj.totalUpload ) /(1024.0 * 1024.0) ) ;
+                data[3] = Number( parseFloat( obj.totalDownload ) /(1024.0 * 1024.0) );
+
+            }
+        
             table.row('.'+obj.ipAddress.split('.').join('_')).data( data )
             });
             table.draw();
@@ -122,7 +125,7 @@ ws.onopen = function (){
         for (var i = 0; i < numbers.length; i++) {
             sum += parseFloat( numbers[i] );
         }
-        if( sum > 0)
+        if( sum > 0 && sum < 1000 )
         {
             $(".totalUploadId").html(  sum );
         }
@@ -132,7 +135,7 @@ ws.onopen = function (){
         for (var i = 0; i < numbers.length; i++) {
             sum += parseFloat( numbers[i] );
         }
-        if( sum > 0)
+        if( sum > 0 && sum < 1000   )
         {
             $(".totalDownloadId").html(  sum );
         }

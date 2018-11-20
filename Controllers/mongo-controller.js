@@ -2,62 +2,96 @@
 var http              = require('http'),
     MongoClient       = require('mongodb').MongoClient,
     mikroNode         = require( 'mikronode' ),
-    handleError      = require('errorhandler');
+    handleError       = require('errorhandler');
+
+
 var url               = "mongodb://localhost:27017/";
+const sizeRequestsCollection = 100; // Value is in GBs
 
-const sizeRequestsCollection = 10; // Value is in GBs
 
-//Defining object varaible to use mikrotik api in nodejs
-/////////////////////////////////////////////////////////
 var databaseObject              ;
 var networkDnsLog               ;
 var networkUserDetails          ;
 var networkUserRequestDetails   ;
-//Defining object variable to use mikrotik api in nodejs
+
+
 var routerSubMaskIp = '192.168.8';
 var routerIp        =  routerSubMaskIp + '0.1';
 var mikroTipObject  =  new mikroNode( routerIp );
-//
-//
-//@Since 1.0
-//Module exports for mongodb intraction
+
+
+////////////////////////////////////////
+////////////////////////////////////////
+//@Since 1.0 ///////////////////////////
+//Module exports for mongodb interaction
  module.exports.createConnection =  function createConnnectWithMongo( dbName , networkDnsLog_  , networkUserDetails_ , networkUserRequestDetails_  , resolve_callback ){
 
   MongoClient.connect(url, { useNewUrlParser: true } , function(err, db) {
-    if (err) throw err;
-    databaseObject = db.db( dbName );
-    databaseObject.createCollection( networkDnsLog_ , function(err, res) {
+
       if (err) throw err;
-    });
-    databaseObject.createCollection( networkUserDetails_ , function(err, res) {
-      if (err) throw err;
-      databaseObject.collection( networkUserDetails_ ).createIndex({  ipAddress:1 });
-    });
-     databaseObject.createCollection( networkUserRequestDetails_ , function(err, res) {
-      if (err) throw err;
-    });
-    databaseName                      = dbName;
-    networkDnsLog                     = networkDnsLog_;
-    networkUserDetails                = networkUserDetails_;
-    networkUserRequestDetails         = networkUserRequestDetails_;
+
+      databaseObject = db.db( dbName );
+      databaseObject.createCollection( networkDnsLog_ , function(err, res) {
+
+        if (err) throw err;
+
+      });
+      databaseObject.createCollection( networkUserDetails_ , function(err, res) {
+
+        if (err) throw err;
+        databaseObject.collection( networkUserDetails_ ).createIndex({  ipAddress:1 });
+
+      });
+      databaseObject.createCollection( networkUserRequestDetails_ , function(err, res) {
+
+        if (err) throw err;
+
+      });
+
+
+      databaseName                      = dbName;
+      networkDnsLog                     = networkDnsLog_;
+      networkUserDetails                = networkUserDetails_;
+      networkUserRequestDetails         = networkUserRequestDetails_;
 
 
  
-/*
-    //setInterval(function () {
-      databaseObject.collection( networkUserRequestDetails_ ).stats(function(err, results) {
-     //   if( results.storageSize > sizeRequestsCollection * 1024 * 1024 * 1024 / 70   )// one row contains 70 bytes
-     //   {
-          databaseObject.collection( networkUserRequestDetails_ ).find().skip( parseInt( sizeRequestsCollection * 1024 * 1024 * 1024  / (results.storageSize / results.count)  ) ).toArray(function(err, result_b) {
-            console.log( result_b );
-            console.log( ( sizeRequestsCollection ) );
-            console.log( (results.storageSize / results.count) );
-            process.exit();
-          });
-        //}
-    });
 
-    //}, 0  );*/
+    setInterval(function () {
+      databaseObject.collection( networkUserRequestDetails_ ).stats(function(err, results) {
+
+          if( results.storageSize > sizeRequestsCollection  * 1024 * 1024    )// one row contains 70 bytes
+          {
+              databaseObject.collection( networkUserRequestDetails_ ).find().skip( parseInt(  sizeRequestsCollection * 1024 * 1024   / (results.storageSize / results.count)  )    ).sort( { searchnonce : 1 } ).toArray(function(err, result_b) {
+                if( result_b )
+                {
+                    console.log( "second doing" );
+                    databaseObject.collection( networkUserRequestDetails_ ).removeMany( { searchnonce : { $gt: result_b[0].searchnonce } });
+                }
+               
+              });
+          }
+
+      });
+      databaseObject.collection( networkDnsLog_ ).stats(function(err, results) {
+
+        if( results.storageSize > ( 50 * 1024 * 1024 )  )// one row contains 70 bytes
+        {
+            databaseObject.collection( networkDnsLog_ ).find().map(function(i) { return i._id; }).skip( parseInt(  25 * 1024 * 1024    / (results.storageSize / results.count)  )    ).sort( { searchnonce : 1 } ).toArray(function(err, result_b) {
+              if( result_b )
+              {
+                  console.log( result_b.length );
+                  console.log( "i 'm doing" );
+                  console.log( results.storageSize );
+                  databaseObject.collection( networkDnsLog_ ).deleteMany({'_id':{'$in':result_b}})
+              }
+  
+            });
+        }
+
+      });
+
+    }, 10000  );
     resolve_callback( 'fine' );
   });
 
@@ -66,127 +100,151 @@ var mikroTipObject  =  new mikroNode( routerIp );
 
 module.exports.saveDnsDetails =  function saveDnsDetailsModule( dnsDetails  )
 {
-
-  databaseObject.collection( networkDnsLog ).drop(function(err, delOK) {
-    if (err) throw err;
-    if (delOK) {
-
-      databaseObject.createCollection( networkDnsLog , function(err, res) {
-        if (err) throw err;
-        databaseObject.collection( networkDnsLog ).insertMany( dnsDetails , function(err, res) {
-          if (err) throw err;
-        });
-      });
-    }
-   
-  });
- 
-
- 
+          databaseObject.createCollection( networkDnsLog , function(err, res) {
+            if (err) throw err;
+              databaseObject.collection( networkDnsLog ).insertMany( dnsDetails , function(err, res) {
+                if (err) throw err;
+              });
+          });
 }
-module.exports.getDnsAddress =  function getDnsAddress( ipAddress , resolve )
-{ 
+module.exports.getDnsAddress =  function getDnsAddress( ipAddress , resolve ) {
+
   databaseObject.collection( networkDnsLog ).find( { 'ipAddress' : ipAddress  }   ).toArray(function(err, result) {
-    if (err) throw err;
-    if( result.length > 0 ){
-      resolve( { 'dsnUrl' : result[0].urlLink  } );
-    } else {
 
-    // mikroConnectionForDbQuery();
-      databaseObject.collection( networkDnsLog ).find( { 'ipAddress' : ipAddress  }   ).toArray(function(err, result) {
-        if( result.length > 0 ){
-          resolve( { 'dsnUrl' : result[0].urlLink  } );
-        } else {
-          resolve( { 'dsnUrl' : ipAddress  } );
-        }
-      });
+      if (err) throw err;
+      if( result.length > 0 ){
 
-    }
+        resolve( { 'dsnUrl' : result[0].urlLink  } );
+
+      } else {
+
+          databaseObject.collection( networkDnsLog ).find( { 'ipAddress' : ipAddress  }   ).toArray(function(err, result) {
+
+              if( result.length > 0 ){
+                resolve( { 'dsnUrl' : result[0].urlLink  } );
+              } else {
+                resolve( { 'dsnUrl' : ipAddress  } );
+              }
+
+          });
+
+      }
+  });
+}
+
+module.exports.getDnsCollection =  function getDnsCollection(  resolve )
+{
+    databaseObject.collection( networkDnsLog ).find( ).toArray(function(err, result) {
+
+        if (err) throw err;
+        resolve( { 'dsnCollection' : result  } );
+
     });
+
 }
 
 
 module.exports.saveUserDetails =  function saveUserDetails( userDetail  ){
 
-  if( userDetail.type  === 'Download' ){
-    userEntry = {
-      '_id'           : userDetail.ipAddress,
-      'ipAddress'     : userDetail.ipAddress ,
-      'ipName'        : userDetail.ipName ,
-      'totalUpload'   : 0 ,
-      'totalDownload' : userDetail.totalSz ,
-    } ;
-  } else {
-    userEntry = {
-      '_id'            : userDetail.ipAddress ,
-      'ipAddress'      : userDetail.ipAddress ,
-      'ipName'         : userDetail.ipName ,
-      'totalUpload'    : userDetail.totalSz ,
-      'totalDownload'  : 0 ,
-    };
-  }
-  databaseObject.collection( networkUserRequestDetails ).insertMany( [userDetail] , function(err, res) {
-    if (err) throw err;
- 
-  });
+    if( userDetail.type  === 'Download' ){
 
-  databaseObject.collection ( networkUserDetails ).findOneAndUpdate(
-     { 'ipAddress' : userEntry.ipAddress  }  ,
-    { $inc: { "totalUpload": userEntry.totalUpload , "totalDownload" : userEntry.totalDownload } , $set : {  "ipName" : userEntry.ipName  } },
-    {
-       upsert: true,
+        userEntry = {
+          '_id'           : userDetail.ipAddress,
+          'ipAddress'     : userDetail.ipAddress ,
+          'ipName'        : userDetail.ipName ,
+          'totalUpload'   : 0 ,
+          'totalDownload' : userDetail.totalSz ,
+        } ;
+
+    } else {
+
+        userEntry = {
+          '_id'            : userDetail.ipAddress ,
+          'ipAddress'      : userDetail.ipAddress ,
+          'ipName'         : userDetail.ipName ,
+          'totalUpload'    : userDetail.totalSz ,
+          'totalDownload'  : 0 ,
+        };
+
     }
-    
+    databaseObject.collection( networkUserRequestDetails ).insertMany( [userDetail] , function(err, res) {
+      if (err) throw err;
+    });
 
-);
-
-
+    databaseObject.collection ( networkUserDetails ).findOneAndUpdate(
+        { 'ipAddress' : userEntry.ipAddress  }  ,
+        { $inc: { "totalUpload": userEntry.totalUpload , "totalDownload" : userEntry.totalDownload } , $set : {  "ipName" : userEntry.ipName  } },
+        {
+          upsert: true,
+        }
+    );
 
 }
 module.exports.saverequestDetails =  function saverequestDetails( requestDetails  ) {
-  databaseObject.collection( networkUserRequestDetails ).insertMany( requestDetails , function(err, res) {
-      if (err) throw err;
-   
+
+    databaseObject.collection( networkUserRequestDetails ).insertMany( requestDetails , function(err, res) {
+        if (err) throw err;
     });
+
 }
 module.exports.getAllUserDetails =  function getAllUserDetails( res ) {
-  databaseObject.collection( networkUserDetails ).find({}).limit( 500 ).toArray(function(err, allUserDetails) {
-    if (err) throw err;
 
-    res.render("tables", {
-      "listObj": allUserDetails
-  });
+    databaseObject.collection( networkUserDetails ).find({}).limit( 500 ).toArray(function(err, allUserDetails) {
+
+      if (err) throw err;
+      res.render("tables", { "listObj": allUserDetails  });
+      return allUserDetails;
+
+    });
+
+}
+
+module.exports.getAllUserDetailsToGraph =  function getAllUserDetailsToGraph( res ) {
+
+  databaseObject.collection( networkUserDetails ).find({}).limit( 500 ).toArray(function(err, allUserDetails) {
+
+    if (err) throw err;
+    if (allUserDetails.length > 0) {
+      res.sendUTF(
+        JSON.stringify(allUserDetails));
+    }
     return allUserDetails;
+
   });
+
 }
 module.exports.getAllUserRequestDetails =  function getAllUserRequestDetails( ipAddress ,  res ) {
-  databaseObject.collection( networkUserRequestDetails ).find( { 'ipAddress' : ipAddress  } ).limit( 500 ).toArray(function( err, allUserRequestDetails ) {
-    if (err) throw err;
-    res.render("user", {
-      "listObj": allUserRequestDetails
-  });
-    return allUserRequestDetails;
-  });
+
+    databaseObject.collection( networkUserRequestDetails ).find( { 'ipAddress' : ipAddress  } ).limit( 200 ).toArray(function( err, allUserRequestDetails ) {
+      if (err) throw err;
+      res.render("user", { "listObj": allUserRequestDetails } );
+      return allUserRequestDetails;
+
+    });
+
 }
 
 module.exports.getAllUserRequestDetailsByIp =  function getAllUserRequestDetailsByIp( ipAddress , timestamp , webSocket ) {
   databaseObject.collection( networkUserRequestDetails ).find( { $and: [ { 'searchnonce' : { $gte: timestamp } } , { 'ipAddress' : ipAddress } ] } ).limit( 500 ).toArray(function( err, result ) {
-    if (err) throw err;
-    if( result.length > 0 ){
-      //webSocket.send(  JSON.stringify( { 'Data' : result } ) );
-      data = JSON.stringify( { 'Data' : result } );
-      webSocket.send(data, function data(err) {
-        if (err) handleError(err);
-      });
 
-    }
-    else{
-      //webSocket.send( JSON.stringify( { 'Data' : 'noData' } ) );
-      data = JSON.stringify( { 'Data' : 'noData' } );
-      webSocket.send(data, function data(err) {
-        if (err) handleError(err);
-      });
-    }
+      if (err) throw err;
+      if( result.length > 0 ){
+
+
+          data = JSON.stringify( { 'Data' : result } );
+          webSocket.send(data, function data(err) {
+            if (err) handleError(err);
+          });
+
+      }
+      else{
+
+          data = JSON.stringify( { 'Data' : 'noData' } );
+          webSocket.send(data, function data(err) {
+            if (err) handleError(err);
+          });
+
+      }
 
 
   });
@@ -194,98 +252,31 @@ module.exports.getAllUserRequestDetailsByIp =  function getAllUserRequestDetails
 
 module.exports.getAllUserDetailsWs =  function getAllUserDetailsWs( webSocket ) {
   databaseObject.collection( networkUserDetails ).find().limit( 500 ).toArray(function( err, result ) {
-    if (err) throw err;
-    if( result.length > 0 ){
-     // webSocket.send( JSON.stringify( { 'Data' : result } ) );
-      data = JSON.stringify( { 'Data' : result } );
-      webSocket.send(data, function data(err) {
-        if (err) handleError(err);
-      });
-    }
-    else{
-     // webSocket.send( JSON.stringify( { 'Data' : 'noData' } ) );
-      data = JSON.stringify( { 'Data' : 'noData'  } );
-      webSocket.send(data, function data(err) {
-        if (err) handleError(err);
-      });
-    }
+
+      if (err) throw err;
+      if( result.length > 0 ){
+        data = JSON.stringify( { 'Data' : result } );
+        webSocket.send( data  ,   function data(  err ) {
+          if (  err ) handleError( err  );
+        });
+      }
+      else{
+        data = JSON.stringify( { 'Data' : 'noData'  } );
+        webSocket.send(   data    , function data (    err   ) {
+          if (  err ) handleError(  err );
+        });
+      }
 
 
   });
 }
 module.exports.removeCollection =  function removeCollection(   ) {
 
-  databaseObject.collection( networkUserDetails_ ).drop();
-  databaseObject.collection( networkUserDetails_ ).find({}).limit( 10 ).toArray(function(err, all_coupons) {
-    if (err) throw err;
+  databaseObject.collection(  networkUserDetails_  ).drop();
+  databaseObject.collection( networkUserDetails_ ).find(  {}  ).limit( 10 ).toArray(  function( err , all_coupons ) {
+    if (  err ) throw err;
      process.exit();
   });
 
 
 }
-
-function mikroConnectionForDbQuery() {
-  
-  mikroTipObject.connect()
-    .then(([login])=>{
-      return login( 'admin' , '<<"Ctch@PHase5DHA">>' );
-    })//login to the router configuration panel
-    .then(function( mtConnection ) {
-
-      console.log( "Reach1" );
-      var channelDnsDetails    =   mtConnection.openChannel( "getDns" );
-      console.log( "get dns open" );
-
-      //Command url to send request torouter for dns details
-      channelDnsDetails.write( '/ip/dns/cache/getall' );
-      /*setTimeout(function () {
-        channelDnsDetails.write( '/ip/dns/cache/getall' );
-      }, 1000 * 60 * 60 ); */
-      console.log( "get dns wrtie" );
-
-       //Trap for getDns Channel for DNS details
-      channelDnsDetails.on( 'trap' , function( data ){
-        console.log( data );
-        console.log( 'DNS request failed' );
-      });
-
-      //Done instructions for getDns table to save DNS data in database
-      channelDnsDetails.on( 'done' , function( result ){
-        console.log( "Reach2" );
-        console.log( result.data );
-        var dnsDetails        = result.data;
-        var dnsdetailsList    =  [];
-        // generating listing of objects of dns details
-        generateDnsForDbQuery( dnsDetails , dnsdetailsList  , callbackGenerateDnsForDbQuery = function( dnsDetails , dnsdetailsList , callbackGenerateDnsForDbQuery ){
-            setTimeout( function() { generateDnsForDbQuery( dnsDetails , dnsdetailsList , callbackGenerateDnsForDbQuery ) } , 0 );
-        });
-
-        channelDnsDetails.close();
-        mtConnection.close();
-      });
-    });
-  }
-
-  //
-  //
-  // @Since 1.0
-  // Async generate Dns addresses
-  function generateDnsForDbQuery( dnsDetails , dnsdetailsList , callbackGenerateDnsForDbQuery  ){
-
-    console.log( "get dns generate" );
-    
-    item = dnsDetails.shift();
-    console.log( "get dns generate shifted" );
-
-    if( item ){
-      dnsdetailsList.push( { 'ipAddress' : item[2].value , 'urlLink' : item[1].value  } );
-    console.log( "push" );
-
-      callbackGenerateDnsForDbQuery( dnsDetails , dnsdetailsList , callbackGenerateDnsForDbQuery );
-    }
-    else{
-     // module.exports.saveDnsDetails( dnsdetailsList ); 
-      console.log( "Complete" );
-
-    }
-  }
