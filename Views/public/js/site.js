@@ -55,7 +55,7 @@ ws.onopen = function (){
         var count = 0;
         dataResult.Data.forEach(function(obj) {
 
-
+            console.log ( obj.totalUpload );
             data = table.row('.'+obj.ipAddress.split('.').join('_')).data();
             if( data != undefined )
             {
@@ -67,6 +67,7 @@ ws.onopen = function (){
             table.row('.'+obj.ipAddress.split('.').join('_')).data( data )
             });
             table.draw();
+            
     }
 }
   setInterval(function(){ 
@@ -116,7 +117,7 @@ ws.onopen = function (){
                 totalDownload += ( parseFloat ( userDownloadObj.html() ) - parseFloat( userDspeedObj.attr( 'data-download' ) )  ) ;
                 userDspeedObj.attr( "data-download" ,  userDownloadObj.html()   );
                 userDspeedObj.attr( 'data-timestamp' , getDateToTimeStamp() );
-
+                
             }
         }
       });

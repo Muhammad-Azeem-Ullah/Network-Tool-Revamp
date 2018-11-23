@@ -31,6 +31,7 @@ var mikroTipObject  =  new mikroNode( routerIp );
       if (err) throw err;
 
       databaseObject = db.db( dbName );
+
       databaseObject.createCollection( networkDnsLog_ , function(err, res) {
 
         if (err) throw err;
@@ -213,6 +214,7 @@ module.exports.getAllUserDetailsToGraph =  function getAllUserDetailsToGraph( re
   });
 
 }
+
 module.exports.getAllUserRequestDetails =  function getAllUserRequestDetails( ipAddress ,  res ) {
 
     databaseObject.collection( networkUserRequestDetails ).find( { 'ipAddress' : ipAddress  } ).limit( 200 ).toArray(function( err, allUserRequestDetails ) {

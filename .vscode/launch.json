@@ -13,8 +13,8 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Program",
-            "program": "${workspaceFolder}\\server.js"
+            "name": "program",
+            "program": "${workspaceFolder}/server.js"
         }
     ]
 }
