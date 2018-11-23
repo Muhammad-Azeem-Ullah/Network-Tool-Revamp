@@ -31,9 +31,12 @@ var mikroTipObject  =  new mikroNode( routerIp );
       if (err) throw err;
 
       databaseObject = db.db( dbName );
+      
       databaseObject.createCollection( networkDnsLog_ , function(err, res) {
 
         if (err) throw err;
+        databaseObject.collection( networkDnsLog_ ).createIndex({  ipAddress:1 });
+
 
       });
       databaseObject.createCollection( networkUserDetails_ , function(err, res) {
@@ -45,6 +48,7 @@ var mikroTipObject  =  new mikroNode( routerIp );
       databaseObject.createCollection( networkUserRequestDetails_ , function(err, res) {
 
         if (err) throw err;
+        databaseObject.collection( networkUserRequestDetails_ ).createIndex({  ipAddress:1 });
 
       });
 
@@ -60,10 +64,11 @@ var mikroTipObject  =  new mikroNode( routerIp );
     setInterval(function () {
       databaseObject.collection( networkUserRequestDetails_ ).stats(function(err, results) {
 
-          if( results.storageSize > sizeRequestsCollection  * 1024 * 1024    )// one row contains 70 bytes
+  
+          if( results.storageSize > sizeRequestsCollection / sizeRequestsCollection * 1024 * 1024    )// one row contains 70 bytes
           {
               databaseObject.collection( networkUserRequestDetails_ ).find().skip( parseInt(  sizeRequestsCollection * 1024 * 1024   / (results.storageSize / results.count)  )    ).sort( { searchnonce : 1 } ).toArray(function(err, result_b) {
-                if( result_b )
+                if( results.length > 0 )
                 {
                     console.log( "second doing" );
                     databaseObject.collection( networkUserRequestDetails_ ).removeMany( { searchnonce : { $gt: result_b[0].searchnonce } });
@@ -74,8 +79,8 @@ var mikroTipObject  =  new mikroNode( routerIp );
 
       });
       databaseObject.collection( networkDnsLog_ ).stats(function(err, results) {
-
-        if( results.storageSize > ( 50 * 1024 * 1024 )  )// one row contains 70 bytes
+    
+        if( results.storageSize > ( 1 * 1024 * 1024 )  )// one row contains 70 bytes
         {
             databaseObject.collection( networkDnsLog_ ).find().map(function(i) { return i._id; }).skip( parseInt(  25 * 1024 * 1024    / (results.storageSize / results.count)  )    ).sort( { searchnonce : 1 } ).toArray(function(err, result_b) {
               if( result_b )
@@ -215,7 +220,25 @@ module.exports.getAllUserDetailsToGraph =  function getAllUserDetailsToGraph( re
 }
 module.exports.getAllUserRequestDetails =  function getAllUserRequestDetails( ipAddress ,  res ) {
 
-    databaseObject.collection( networkUserRequestDetails ).find( { 'ipAddress' : ipAddress  } ).limit( 200 ).toArray(function( err, allUserRequestDetails ) {
+    databaseObject.collection( networkUserRequestDetails ) .aggregate(  [ 
+      { $match: { "ipAddress": ipAddress }}, 
+      { 
+        $group: {
+          _id: "$targetIp",
+          ipAddress : { $first: '$ipAddress' } ,
+          ipName : { $first: '$ipName' } ,
+          targetIp : { $first: '$targetIp' } ,
+          type : { $first: '$type' } ,
+          timestamp : { $first: '$timestamp' } ,
+          totalSz: {
+            $sum : "$totalSz"
+          } ,
+          numPackets: {
+            $sum : "$numPackets"
+          }
+        }
+      }
+    ]).toArray(function( err, allUserRequestDetails ) {
       if (err) throw err;
       res.render("user", { "listObj": allUserRequestDetails } );
       return allUserRequestDetails;

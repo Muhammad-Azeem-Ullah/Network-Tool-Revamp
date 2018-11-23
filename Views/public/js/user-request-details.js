@@ -87,22 +87,52 @@ function getDateToTimeStamp() {
 
 $(document).ready(function () {
     $('#dataTables-example').DataTable({
-        responsive: true 
+        responsive: true ,
+        "drawCallback": function( settings ) {
+          
+            numPackets = 0;
+            packetsSize = 0;
+            var count = 0;
+            $('#dataTables-example').DataTable().rows().every( function ( rowIdx, tableLoop, rowLoop ) {
+                var data = this.data();
+                numPackets += parseFloat( data[4] );
+                packetsSize += parseFloat( data[5] );
+                count++;
+            
+            } );
+          
+            jQuery( "#nopackets" ) .html( numPackets );
+            jQuery( "#packSize" ) .html( packetsSize );
+        }
     });
 });
+
+var numPackets = 0;
+var packetsSize = 0;
 
 $.fn.dataTable.ext.search.push(
     function( settings, data, dataIndex ) {
         var min =  Date.parse( $('#date_from').val() );
         var max =  Date.parse( $('#date_to').val() );
-        
         var age =  Date.parse( data[6] )   || 0; // use data for the age column
- 
+
+        if( dataIndex === 0 )
+        {
+          
+            numPackets = 0;
+            packetsSize = 0;
+        }
+        
         if ( ( isNaN( min ) && isNaN( max ) ) ||
              ( isNaN( min ) && age <= max ) ||
              ( min <= age   && isNaN( max ) ) ||
              ( min <= age   && age <= max ) )
         {
+          
+            numPackets = numPackets + parseFloat( data[4] ) ;
+            packetsSize += parseFloat( data[5] ) ;
+            jQuery( "#nopackets" ) .html( numPackets );
+            jQuery( "#packSize" ) .html( packetsSize );
             return true;
         }
         return false;

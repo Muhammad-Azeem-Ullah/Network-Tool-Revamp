@@ -130,17 +130,17 @@ function generateRequestData( requestsDetails   ){
 
             var ipSearch = lodash.filter( ipDetails , { 'ipAddress': item[1]  } );
             if( ipSearch[0] ){
-                requestObject = { ipAddress : item[1] , ipName : ipSearch[0].ipName , targetIp :  item[0]  , numPackets :  item[3] , totalSz : parseInt ( item[2] ) , type : "Download" , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') , searchnonce : timestamp( 'YYYYMMDDHHmmss' ) };
+                requestObject = { ipAddress : item[1] , ipName : ipSearch[0].ipName , targetIp :  item[0]  , numPackets : parseInt (  item[3] ) , totalSz : parseInt ( item[2] ) , type : "Download" , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') , searchnonce : timestamp( 'YYYYMMDDHHmmss' ) };
             } else{
-                requestObject = { ipAddress : item[1] , ipName : 'Unknown' , targetIp :  item[0]  , numPackets :  item[3] , totalSz : parseInt ( item[2] ) , type : "Download" , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') , searchnonce : timestamp( 'YYYYMMDDHHmmss' ) }
+                requestObject = { ipAddress : item[1] , ipName : 'Unknown' , targetIp :  item[0]  , numPackets : parseInt (  item[3] ), totalSz : parseInt ( item[2] ) , type : "Download" , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') , searchnonce : timestamp( 'YYYYMMDDHHmmss' ) }
             }
         } else {
 
             var ipSearch = lodash.filter( ipDetails , { 'ipAddress': item[0]  } );
             if( ipSearch[0] ){
-                requestObject = { ipAddress : item[0] , ipName : ipSearch[0].ipName , targetIp :  item[1] , numPackets :  item[3] , totalSz : parseInt ( item[2] ) , type : "Uplaod"  , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') , searchnonce : timestamp( 'YYYYMMDDHHmmss' )};
+                requestObject = { ipAddress : item[0] , ipName : ipSearch[0].ipName , targetIp :  item[1] , numPackets : parseInt (  item[3] ) , totalSz : parseInt ( item[2] ) , type : "Uplaod"  , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') , searchnonce : timestamp( 'YYYYMMDDHHmmss' )};
             } else{
-                requestObject = { ipAddress : item[0] , ipName : 'Unknown' , targetIp : item[1]  , numPackets :  item[3] , totalSz : parseInt ( item[2] ) , type : "Upload"  , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') , searchnonce : timestamp( 'YYYYMMDDHHmmss' ) }
+                requestObject = { ipAddress : item[0] , ipName : 'Unknown' , targetIp : item[1]  , numPackets : parseInt (  item[3] ) , totalSz : parseInt ( item[2] ) , type : "Upload"  , timestamp : timestamp('HH:mm:ss YYYY/MM/DD') , searchnonce : timestamp( 'YYYYMMDDHHmmss' ) }
             }
         }
 
