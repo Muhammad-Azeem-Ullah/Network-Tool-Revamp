@@ -12,10 +12,6 @@ var mikroNode            = require( 'mikronode' ),
 
 
 
-const wss                     = new WebSocket.Server({ port: 8081 });
-const wssForUsers             = new WebSocket.Server({ port: 8082 });
-
-
 var routerSubMaskIp = '192.168.8';
 var routerIp        =  routerSubMaskIp + '0.1';
 var mikroTipObject  =  new mikroNode( routerIp );
@@ -55,35 +51,7 @@ databasePromise
         }, 5000  );
 
 
-      app.get(  '/', function (req, res) {
-
-        res.render( "index", {
-            "listObj": []
-        } );
-
-      } );
-
-      app.get(  '/index', function (req, res) {
-
-        res.render( "index", {
-            "listObj": []
-        } );
-
-      } );
-
-      app.get(  '/users', function (req, res) {
-
-        controllerMongo.getAllUserDetails( res );
-
-      } );
-
-      app.get(  '/user', function (req, res) {
-
-        controllerMongo.getAllUserRequestDetails( req.query.ip , res );
-        
-      });
-
-      app.listen(4000);
+   
     })
   .catch( function notOk( err ) {
 
@@ -93,29 +61,6 @@ databasePromise
 
 
 
-  wss.on( 'connection', ws => {
-
-    ws.on(  'message', message => {
-
-      var msgObj = JSON.parse( message );
-      controllerMongo.getAllUserRequestDetailsByIp( msgObj.ipAddress , msgObj.timestamp , ws  );
-
-    } );
-
-  } );
-
-
-
-  wssForUsers.on( 'connection', ws => {
-
-    ws.on(  'message', message => {
-
-      var msgObj = JSON.parse( message );
-      controllerMongo.getAllUserDetailsWs( ws);
-
-    } );
-
-  } );
 
 
 

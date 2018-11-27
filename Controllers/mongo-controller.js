@@ -2,7 +2,8 @@
 var http              = require('http'),
     MongoClient       = require('mongodb').MongoClient,
     mikroNode         = require( 'mikronode' ),
-    handleError       = require('errorhandler');
+    handleError       = require('errorhandler'),
+    timestamp       = require('time-stamp');;
 
 
 var url               = "mongodb://localhost:27017/";
@@ -31,12 +32,9 @@ var mikroTipObject  =  new mikroNode( routerIp );
       if (err) throw err;
 
       databaseObject = db.db( dbName );
-      
       databaseObject.createCollection( networkDnsLog_ , function(err, res) {
 
         if (err) throw err;
-        databaseObject.collection( networkDnsLog_ ).createIndex({  ipAddress:1 });
-
 
       });
       databaseObject.createCollection( networkUserDetails_ , function(err, res) {
@@ -48,7 +46,6 @@ var mikroTipObject  =  new mikroNode( routerIp );
       databaseObject.createCollection( networkUserRequestDetails_ , function(err, res) {
 
         if (err) throw err;
-        databaseObject.collection( networkUserRequestDetails_ ).createIndex({  ipAddress:1 });
 
       });
 
@@ -64,13 +61,11 @@ var mikroTipObject  =  new mikroNode( routerIp );
     setInterval(function () {
       databaseObject.collection( networkUserRequestDetails_ ).stats(function(err, results) {
 
-  
-          if( results.storageSize > sizeRequestsCollection / sizeRequestsCollection * 1024 * 1024    )// one row contains 70 bytes
+          if( results.storageSize > sizeRequestsCollection  * 1024 * 1024    )// one row contains 70 bytes
           {
               databaseObject.collection( networkUserRequestDetails_ ).find().skip( parseInt(  sizeRequestsCollection * 1024 * 1024   / (results.storageSize / results.count)  )    ).sort( { searchnonce : 1 } ).toArray(function(err, result_b) {
-                if( results.length > 0 )
+                if( result_b )
                 {
-                    console.log( "second doing" );
                     databaseObject.collection( networkUserRequestDetails_ ).removeMany( { searchnonce : { $gt: result_b[0].searchnonce } });
                 }
                
@@ -79,15 +74,12 @@ var mikroTipObject  =  new mikroNode( routerIp );
 
       });
       databaseObject.collection( networkDnsLog_ ).stats(function(err, results) {
-    
-        if( results.storageSize > ( 1 * 1024 * 1024 )  )// one row contains 70 bytes
+
+        if( results.storageSize > ( 50 * 1024 * 1024 )  )// one row contains 70 bytes
         {
             databaseObject.collection( networkDnsLog_ ).find().map(function(i) { return i._id; }).skip( parseInt(  25 * 1024 * 1024    / (results.storageSize / results.count)  )    ).sort( { searchnonce : 1 } ).toArray(function(err, result_b) {
               if( result_b )
               {
-                  console.log( result_b.length );
-                  console.log( "i 'm doing" );
-                  console.log( results.storageSize );
                   databaseObject.collection( networkDnsLog_ ).deleteMany({'_id':{'$in':result_b}})
               }
   
@@ -139,7 +131,7 @@ module.exports.getDnsAddress =  function getDnsAddress( ipAddress , resolve ) {
 
 module.exports.getDnsCollection =  function getDnsCollection(  resolve )
 {
-    databaseObject.collection( networkDnsLog ).find( ).toArray(function(err, result) {
+    databaseObject.collection( networkDnsLog ).find( {} ).limit( 50000 ).toArray(function(err, result) {
 
         if (err) throw err;
         resolve( { 'dsnCollection' : result  } );
@@ -192,15 +184,18 @@ module.exports.saverequestDetails =  function saverequestDetails( requestDetails
     });
 
 }
+var allUsersSpeed = {};
 module.exports.getAllUserDetails =  function getAllUserDetails( res ) {
 
     databaseObject.collection( networkUserDetails ).find({}).limit( 500 ).toArray(function(err, allUserDetails) {
-
       if (err) throw err;
       res.render("tables", { "listObj": allUserDetails  });
       return allUserDetails;
 
     });
+
+}
+function async_speed(){
 
 }
 
@@ -220,25 +215,7 @@ module.exports.getAllUserDetailsToGraph =  function getAllUserDetailsToGraph( re
 }
 module.exports.getAllUserRequestDetails =  function getAllUserRequestDetails( ipAddress ,  res ) {
 
-    databaseObject.collection( networkUserRequestDetails ) .aggregate(  [ 
-      { $match: { "ipAddress": ipAddress }}, 
-      { 
-        $group: {
-          _id: "$targetIp",
-          ipAddress : { $first: '$ipAddress' } ,
-          ipName : { $first: '$ipName' } ,
-          targetIp : { $first: '$targetIp' } ,
-          type : { $first: '$type' } ,
-          timestamp : { $first: '$timestamp' } ,
-          totalSz: {
-            $sum : "$totalSz"
-          } ,
-          numPackets: {
-            $sum : "$numPackets"
-          }
-        }
-      }
-    ]).toArray(function( err, allUserRequestDetails ) {
+    databaseObject.collection( networkUserRequestDetails ).find( { 'ipAddress' : ipAddress  } ).limit( 200 ).toArray(function( err, allUserRequestDetails ) {
       if (err) throw err;
       res.render("user", { "listObj": allUserRequestDetails } );
       return allUserRequestDetails;
@@ -276,8 +253,31 @@ module.exports.getAllUserRequestDetailsByIp =  function getAllUserRequestDetails
 module.exports.getAllUserDetailsWs =  function getAllUserDetailsWs( webSocket ) {
   databaseObject.collection( networkUserDetails ).find().limit( 500 ).toArray(function( err, result ) {
 
+   
+
       if (err) throw err;
       if( result.length > 0 ){
+
+        for( var ele = 0 ; ele < result.length ; ele++ ){
+        
+          if( allUsersSpeed[ result[ ele ].ipAddress ] === undefined ) {
+    
+            allUsersSpeed[ result[ ele ].ipAddress ] = {  totalDownload : result[ ele ].totalDownload  ,  totalUpload : result[ ele ].totalUpload , timestamp : timestamp( 'YYYYMMDDHHmmss' ) }
+    
+          } else {
+    
+            nowTimeStamp =  timestamp( 'YYYYMMDDHHmmss' );
+            stampDiff    = nowTimeStamp - allUsersSpeed[ result[ ele ].ipAddress ].timestamp ;
+            dspeed       = (  result[ ele ].totalDownload - allUsersSpeed[ result[ ele ].ipAddress ].totalDownload ) / stampDiff ;
+            uspeed       = (   result[ ele ].totalUpload - allUsersSpeed[ result[ ele ].ipAddress ].totalUpload ) / stampDiff ;
+            result[ ele ].dspeed= dspeed;
+            result[ ele ].uspeed = uspeed;
+            allUsersSpeed[ result[ ele ].ipAddress ] = {  totalDownload : result[ ele ].totalDownload  ,  totalUpload : result[ ele ].totalUpload , timestamp : timestamp( 'YYYYMMDDHHmmss' ) }
+    
+          }
+    
+        };
+   
         data = JSON.stringify( { 'Data' : result } );
         webSocket.send( data  ,   function data(  err ) {
           if (  err ) handleError( err  );
